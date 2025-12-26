@@ -1,27 +1,28 @@
 #include <WiFi.h>
-#include <PubSubClient.h>
+#include <ArduinoMqttClient.h>
 #include <DHT.h>
 
-/* WiFi Credentials */
 const char* ssid = "SUNBEAM";
 const char* password = "1234567890";
 
-/* MQTT Broker */
-const char* mqtt_server = "172.18.4.147";  // Your PC IP
-const int mqtt_port = 1883;
+const char* broker = "172.18.3.9";  
+int port = 1883;
 const char* topic = "environment/data";
 
-/* Sensor Pins */
 #define DHTPIN 4
 #define DHTTYPE DHT11
 #define MQ2_PIN 34
 
-WiFiClient espClient;
-PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
 
-/* -------------------- */
-void connectWiFi() {
+WiFiClient wifiClient;
+MqttClient mqttClient(wifiClient);
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  // Connect to WiFi
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
 
@@ -29,56 +30,41 @@ void connectWiFi() {
     delay(500);
     Serial.print(".");
   }
-
   Serial.println("\nWiFi Connected");
-  Serial.print("ESP32 IP: ");
-  Serial.println(WiFi.localIP());
-}
-
-/* -------------------- */
-void connectMQTT() {
-  while (!client.connected()) {
-    Serial.print("Connecting to MQTT... ");
-    if (client.connect("ESP32_ENV")) {
-      Serial.println("Connected");
-    } else {
-      Serial.print("Failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" retrying in 2 sec");
-      delay(2000);
-    }
+  
+  // Connect to MQTT Broker (Added a loop to retry until connected)
+  Serial.print("Connecting to MQTT Broker...");
+  while (!mqttClient.connect(broker, port)) {
+    Serial.print(".");
+    delay(1000);
   }
+  Serial.println("Connected to MQTT Broker");
 }
 
-/* -------------------- */
-void setup() {
-  Serial.begin(115200);
-  dht.begin();
-
-  connectWiFi();
-
-  client.setServer(mqtt_server, mqtt_port);
-}
-
-/* -------------------- */
 void loop() {
-  if (!client.connected()) {
-    connectMQTT();
-  }
+  // Ensure MQTT stays connected
+  mqttClient.poll();
 
-  float temp = dht.readTemperature();
-  float hum = dht.readHumidity();
-  int gas = analogRead(MQ2_PIN);
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+  int gasValue = analogRead(MQ2_PIN);
 
-  if (isnan(temp) || isnan(hum)) {
-    Serial.println("DHT read failed");
+  if (isnan(temperature) || isnan(humidity)) {
+    Serial.println("Failed to read from DHT sensor");
     return;
   }
 
-  String payload = String(temp) + "," + String(hum) + "," + String(gas);
+  // Create message string
+  String data = String(temperature) + "," + String(humidity) + "," + String(gasValue);
 
-  client.publish(topic, payload.c_str());
-  Serial.println("Published: " + payload);
+  // Publish data to MQTT
+  mqttClient.beginMessage(topic);
+  mqttClient.print(data);
+  mqttClient.endMessage();
 
-  delay(3000);
+  // Print to Serial Monitor (This is where you see it!)
+  Serial.print("Data Sent to Serial: ");
+  Serial.println(data);
+
+  delay(3000);  // send every 3 seconds
 }
