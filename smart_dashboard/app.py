@@ -3,13 +3,20 @@ import mysql.connector
 from datetime import datetime
 
 app = Flask(__name__)
+<<<<<<< HEAD
 
 # --- DATABASE CONFIGURATION ---
+=======
+>>>>>>> a8f6d6c93a370b14f92ddb798f40a38740e7dd0e
 db_config = {
     'user': 'root',
     'password': 'root', 
     'host': 'localhost',
+<<<<<<< HEAD
     'database': 'smart_env'
+=======
+    'database':'env_monitoring'
+>>>>>>> a8f6d6c93a370b14f92ddb798f40a38740e7dd0e
 }
 
 def get_db_connection():
@@ -36,7 +43,10 @@ def get_history():
     """Get the last 20 readings for the chart."""
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+<<<<<<< HEAD
     # Get last 20 records, then reverse them so the chart is Left-to-Right (Oldest -> Newest)
+=======
+>>>>>>> a8f6d6c93a370b14f92ddb798f40a38740e7dd0e
     cursor.execute("SELECT * FROM sensor_data ORDER BY id DESC LIMIT 20")
     rows = cursor.fetchall()
     data = list(reversed(rows))
@@ -45,5 +55,9 @@ def get_history():
     return jsonify(data)
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     # host='0.0.0.0' makes it accessible from other computers on your network
     app.run(host='0.0.0.0', port=5000, debug=True)
+=======
+      app.run(host='0.0.0.0', port=5000, debug=True)
+>>>>>>> a8f6d6c93a370b14f92ddb798f40a38740e7dd0e

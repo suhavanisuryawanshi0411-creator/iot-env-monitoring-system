@@ -6,7 +6,11 @@ const char* ssid = "AndroidAP_5063";
 const char* password = "anaghaaa";
 
 
+<<<<<<<< HEAD:Publisher/Publisher.ino
 const char* broker = "10.223.1.61";  
+========
+const char* broker = "172.18.4.147";  
+>>>>>>>> a8f6d6c93a370b14f92ddb798f40a38740e7dd0e:environment/environment.ino
 int port = 1883;
 const char* topic = "environment/data";
 
