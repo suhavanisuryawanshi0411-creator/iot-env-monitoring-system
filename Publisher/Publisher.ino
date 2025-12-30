@@ -2,11 +2,11 @@
 #include <ArduinoMqttClient.h>
 #include <DHT.h>
 
-const char* ssid = "SUNBEAM";
-const char* password = "1234567890";
+const char* ssid = "AndroidAP_5063";
+const char* password = "anaghaaa";
 
 
-const char* broker = "172.18.3.205";  
+const char* broker = "10.223.1.61";  
 int port = 1883;
 const char* topic = "environment/data";
 
