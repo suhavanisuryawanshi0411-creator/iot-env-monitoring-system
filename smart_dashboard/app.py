@@ -1,63 +1,29 @@
 from flask import Flask, render_template, jsonify
 import mysql.connector
-from datetime import datetime
 
 app = Flask(__name__)
-<<<<<<< HEAD
 
-# --- DATABASE CONFIGURATION ---
-=======
->>>>>>> a8f6d6c93a370b14f92ddb798f40a38740e7dd0e
-db_config = {
-    'user': 'root',
-    'password': 'root', 
-    'host': 'localhost',
-<<<<<<< HEAD
-    'database': 'smart_env'
-=======
-    'database':'env_monitoring'
->>>>>>> a8f6d6c93a370b14f92ddb798f40a38740e7dd0e
-}
+db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="root",
+    database="env_monitoring"
+)
 
-def get_db_connection():
-    return mysql.connector.connect(**db_config)
-
-@app.route('/')
+@app.route("/")
 def index():
-    """Render the main dashboard page."""
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/api/latest')
-def get_latest():
-    """Get the single most recent reading."""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM sensor_data ORDER BY id DESC LIMIT 1")
-    data = cursor.fetchone()
-    cursor.close()
-    conn.close()
+@app.route("/data")
+def get_data():
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT temperature, humidity, gas, timestamp
+        FROM sensor_data
+        ORDER BY id DESC LIMIT 20
+    """)
+    data = cursor.fetchall()
     return jsonify(data)
 
-@app.route('/api/history')
-def get_history():
-    """Get the last 20 readings for the chart."""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-<<<<<<< HEAD
-    # Get last 20 records, then reverse them so the chart is Left-to-Right (Oldest -> Newest)
-=======
->>>>>>> a8f6d6c93a370b14f92ddb798f40a38740e7dd0e
-    cursor.execute("SELECT * FROM sensor_data ORDER BY id DESC LIMIT 20")
-    rows = cursor.fetchall()
-    data = list(reversed(rows))
-    cursor.close()
-    conn.close()
-    return jsonify(data)
-
-if __name__ == '__main__':
-<<<<<<< HEAD
-    # host='0.0.0.0' makes it accessible from other computers on your network
-    app.run(host='0.0.0.0', port=5000, debug=True)
-=======
-      app.run(host='0.0.0.0', port=5000, debug=True)
->>>>>>> a8f6d6c93a370b14f92ddb798f40a38740e7dd0e
+if __name__ == "__main__":
+    app.run(debug=True)
