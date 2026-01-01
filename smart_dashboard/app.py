@@ -1,45 +1,46 @@
 from flask import Flask, render_template, jsonify
 import mysql.connector
-from datetime import datetime
 
 app = Flask(__name__)
-db_config = {
-    'user': 'root',
-    'password': 'root', 
-    'host': 'localhost',
-    'database':'env_monitoring'
-}
 
-def get_db_connection():
-    return mysql.connector.connect(**db_config)
+def get_db():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="root",
+        database="env_monitoring"
+    )
 
-@app.route('/')
+@app.route("/")
 def index():
-    """Render the main dashboard page."""
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/api/latest')
-def get_latest():
-    """Get the single most recent reading."""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM sensor_data ORDER BY id DESC LIMIT 1")
-    data = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return jsonify(data)
+@app.route("/data")
+def data():
+    db = get_db()
+    cursor = db.cursor()
 
-@app.route('/api/history')
-def get_history():
-    """Get the last 20 readings for the chart."""
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM sensor_data ORDER BY id DESC LIMIT 20")
+    cursor.execute("""
+        SELECT temperature, humidity, gas, timestamp
+        FROM sensor_data
+        ORDER BY timestamp DESC
+        LIMIT 10
+    """)
+
     rows = cursor.fetchall()
-    data = list(reversed(rows))
-    cursor.close()
-    conn.close()
-    return jsonify(data)
+    rows.reverse()  
 
-if __name__ == '__main__':
-      app.run(host='0.0.0.0', port=5000, debug=True)
+    result = []
+    for r in rows:
+        result.append([
+            r[0],             
+            r[1],                
+            r[2],                 
+            r[3].strftime("%H:%M:%S")  
+        ])
+
+    db.close()
+    return jsonify(result)
+
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -1,367 +1,225 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Environment Dashboard</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Google Fonts: Poppins for modern typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome for Professional Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<title>Live Sensor Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        :root {
-            --bg-dark: #111827;
-            --card-bg: #1f2937;
-            --text-primary: #f3f4f6;
-            --text-secondary: #9ca3af;
-            --accent-temp: linear-gradient(135deg, #ff6b6b 0%, #f06595 100%);
-            --accent-hum: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --accent-gas: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
+<style>
+body{
+    background:#0f172a;
+    color:white;
+    font-family:Arial;
+    padding:20px;
+}
+.cards{
+    display:flex;
+    gap:15px;
+    margin-bottom:20px;
+}
+.card{
+    flex:1;
+    background:#1e293b;
+    padding:15px;
+    border-radius:10px;
+    text-align:center;
+}
+.value{
+    font-size:26px;
+    font-weight:bold;
+}
+.alert{ color:red; font-weight:bold; }
 
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-primary);
-            font-family: 'Poppins', sans-serif;
-            min-height: 100vh;
-        }
+.charts-row{
+    display:flex;
+    gap:15px;
+    margin-bottom:30px;
+}
+.chart-box{
+    background:#1e293b;
+    padding:12px;
+    border-radius:10px;
+    width:33%;
+    cursor:pointer;
+}
+canvas{ height:160px !important; }
 
-        /* Navbar Styling - Glassmorphism */
-        .navbar {
-            background-color: rgba(31, 41, 55, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+/* TABLE */
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:#020617;
+    border-radius:10px;
+    overflow:hidden;
+}
+th,td{
+    padding:10px;
+    text-align:center;
+    border-bottom:1px solid #334155;
+}
+th{ background:#1e293b; }
+tr:hover{ background:#1e293b; }
 
-        .navbar-brand {
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        /* Custom Card Styling */
-        .stat-card {
-            background: var(--card-bg);
-            border: none;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            color: white;
-            height: 100%;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-        }
-
-        /* Specific Gradients for cards */
-        .card-temp {
-            background: var(--accent-temp);
-        }
-        
-        .card-hum {
-            background: var(--accent-hum);
-        }
-
-        .card-gas {
-            background: var(--accent-gas);
-        }
-
-        /* Icon Styling */
-        .card-icon {
-            font-size: 3rem;
-            opacity: 0.9;
-            background: rgba(255, 255, 255, 0.2);
-            width: 70px;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        /* Typography within cards */
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 600;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Chart Container */
-        .chart-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-        }
-
-        .chart-container {
-            position: relative;
-            height: 45vh;
-            width: 100%;
-        }
-
-        /* Database Badge */
-        .db-badge {
-            background: rgba(59, 130, 246, 0.2);
-            color: #60a5fa;
-            border: 1px solid rgba(59, 130, 246, 0.4);
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-family: monospace;
-        }
-
-        .last-updated {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
-    </style>
+/* ZOOM */
+.modal{
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.85);
+    justify-content:center;
+    align-items:center;
+    z-index:999;
+}
+.modal-content{
+    background:#020617;
+    padding:20px;
+    width:90%;
+    height:80%;
+    border-radius:12px;
+}
+.modal canvas{ height:100% !important; }
+.close{
+    float:right;
+    font-size:22px;
+    cursor:pointer;
+}
+</style>
 </head>
+
 <body>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-microchip me-2"></i>Smart Env. Monitor
-            </a>
-            <div class="d-flex align-items-center">
-                <span class="db-badge me-3"><i class="fas fa-database me-1"></i> env_monitoring</span>
-                <span class="text-white-50 last-updated" id="lastUpdate">Waiting for data...</span>
-            </div>
-        </div>
-    </nav>
+<h2>🌍 Environment Monitoring Dashboard</h2>
+<p>Live Time: <span id="clock"></span></p>
 
-    <div class="container">
-        <!-- Top Cards Row -->
-        <div class="row mb-4">
-            <!-- Temperature -->
-            <div class="col-md-4 mb-3 mb-md-0">
-                <div class="stat-card card-temp">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="stat-label">Temperature</div>
-                            <div class="stat-value"><span id="val-temp">--</span> <span style="font-size:1.5rem">°C</span></div>
-                        </div>
-                        <div class="card-icon">
-                            <i class="fas fa-thermometer-half"></i>
-                        </div>
-                    </div>
-                    <div class="mt-3" style="font-size: 0.8rem; opacity: 0.8;">
-                        <i class="fas fa-arrow-up"></i> +2% vs last hour
-                    </div>
-                </div>
-            </div>
-
-            <!-- Humidity -->
-            <div class="col-md-4 mb-3 mb-md-0">
-                <div class="stat-card card-hum">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="stat-label">Humidity</div>
-                            <div class="stat-value"><span id="val-hum">--</span> <span style="font-size:1.5rem">%</span></div>
-                        </div>
-                        <div class="card-icon">
-                            <i class="fas fa-tint"></i>
-                        </div>
-                    </div>
-                    <div class="mt-3" style="font-size: 0.8rem; opacity: 0.8;">
-                        <i class="fas fa-minus"></i> Stable
-                    </div>
-                </div>
-            </div>
-
-            <!-- Gas -->
-            <div class="col-md-4">
-                <div class="stat-card card-gas">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="stat-label">Gas Level</div>
-                            <div class="stat-value"><span id="val-gas">--</span> <span style="font-size:1.5rem">PPM</span></div>
-                        </div>
-                        <div class="card-icon">
-                            <i class="fas fa-cloud"></i>
-                        </div>
-                    </div>
-                    <div class="mt-3" style="font-size: 0.8rem; opacity: 0.8;">
-                        <i class="fas fa-check-circle"></i> Safe
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Chart Section -->
-        <div class="row">
-            <div class="col-12">
-                <div class="chart-card">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0 fw-bold"><i class="fas fa-chart-line me-2 text-info"></i>Live Analytics</h5>
-                        <div>
-                            <span class="badge bg-danger rounded-pill me-1">Temp</span>
-                            <span class="badge bg-primary rounded-pill me-1">Hum</span>
-                            <span class="badge bg-secondary rounded-pill">Gas</span>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="envChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- LIVE VALUES -->
+<div class="cards">
+    <div class="card">🌡 Temperature
+        <div class="value" id="temp">--</div>
+        <div id="tempAlert"></div>
     </div>
+    <div class="card">💧 Humidity
+        <div class="value" id="hum">--</div>
+        <div id="humAlert"></div>
+    </div>
+    <div class="card">🧪 Gas
+        <div class="value" id="gas">--</div>
+        <div id="gasAlert"></div>
+    </div>
+</div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        const ctx = document.getElementById('envChart').getContext('2d');
-        
-        // Create Gradients for Chart Lines
-        const gradientTemp = ctx.createLinearGradient(0, 0, 0, 400);
-        gradientTemp.addColorStop(0, 'rgba(255, 99, 132, 0.5)');
-        gradientTemp.addColorStop(1, 'rgba(255, 99, 132, 0)');
+<!-- CHARTS -->
+<div class="charts-row">
+    <div class="chart-box" onclick="openZoom('temp')">
+        <h4>Temperature</h4>
+        <canvas id="tempChart"></canvas>
+    </div>
+    <div class="chart-box" onclick="openZoom('hum')">
+        <h4>Humidity</h4>
+        <canvas id="humChart"></canvas>
+    </div>
+    <div class="chart-box" onclick="openZoom('gas')">
+        <h4>Gas</h4>
+        <canvas id="gasChart"></canvas>
+    </div>
+</div>
 
-        const gradientHum = ctx.createLinearGradient(0, 0, 0, 400);
-        gradientHum.addColorStop(0, 'rgba(54, 162, 235, 0.5)');
-        gradientHum.addColorStop(1, 'rgba(54, 162, 235, 0)');
+<!-- DATA TABLE -->
+<h3>📋 Sensor Data Table</h3>
+<table>
+<thead>
+<tr>
+    <th>#</th>
+    <th>Temperature (°C)</th>
+    <th>Humidity (%)</th>
+    <th>Gas (PPM)</th>
+    <th>Timestamp</th>
+</tr>
+</thead>
+<tbody id="dataTable"></tbody>
+</table>
 
-        const envChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    { 
-                        label: 'Temp (°C)', 
-                        borderColor: '#ff6b6b', 
-                        backgroundColor: gradientTemp,
-                        data: [], 
-                        fill: true,
-                        tension: 0.4, // Makes lines smooth
-                        pointRadius: 3,
-                        pointHoverRadius: 6
-                    },
-                    { 
-                        label: 'Hum (%)', 
-                        borderColor: '#4facfe', 
-                        backgroundColor: gradientHum,
-                        data: [], 
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 3,
-                        pointHoverRadius: 6
-                    },
-                    { 
-                        label: 'Gas', 
-                        borderColor: '#a855f7', 
-                        borderDash: [5, 5], // Dashed line for Gas
-                        data: [], 
-                        fill: false, 
-                        tension: 0.4,
-                        yAxisID: 'y1',
-                        pointRadius: 3,
-                        pointHoverRadius: 6
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: { color: '#9ca3af' } // Legend text color
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(31, 41, 55, 0.9)',
-                        titleColor: '#fff',
-                        bodyColor: '#cbd5e1',
-                        borderColor: 'rgba(255,255,255,0.1)',
-                        borderWidth: 1
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: { color: '#6b7280' },
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    },
-                    y: { 
-                        ticks: { color: '#6b7280' },
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                        beginAtZero: true, 
-                        position: 'left' 
-                    },
-                    y1: { 
-                        ticks: { color: '#a855f7' },
-                        grid: { drawOnChartArea: false }, 
-                        beginAtZero: true, 
-                        position: 'right' 
-                    }
-                },
-                interaction: {
-                    mode: 'nearest',
-                    axis: 'x',
-                    intersect: false
-                }
-            }
-        });
+<!-- ZOOM MODAL -->
+<div class="modal" id="zoomModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeZoom()">✖</span>
+        <canvas id="zoomChart"></canvas>
+    </div>
+</div>
 
-        async function fetchData() {
-            try {
-                const response = await fetch('/api/data');
-                const data = await response.json();
-                
-                // Handle Labels (Time)
-                const labels = data.map(d => {
-                    const t = new Date(d.timestamp);
-                    return t.toLocaleTimeString([], { hour12: false }); // Clean time format
-                });
+<script>
+const TEMP_LIMIT=40, HUM_LIMIT=80, GAS_LIMIT=500;
+let zoomChart;
 
-                // Update Chart Data
-                envChart.data.labels = labels;
-                envChart.data.datasets[0].data = data.map(d => d.temperature);
-                envChart.data.datasets[1].data = data.map(d => d.humidity);
-                envChart.data.datasets[2].data = data.map(d => d.gas);
-                envChart.update();
+function updateClock(){
+    clock.innerText=new Date().toLocaleTimeString();
+}
+setInterval(updateClock,1000);
 
-                // Update Cards (Latest value)
-                if (data.length > 0) {
-                    const latest = data[data.length - 1];
-                    document.getElementById('val-temp').innerText = latest.temperature.toFixed(1);
-                    document.getElementById('val-hum').innerText = latest.humidity.toFixed(1);
-                    document.getElementById('val-gas').innerText = latest.gas.toFixed(0);
-                    
-                    // Update timestamp text
-                    const now = new Date();
-                    document.getElementById('lastUpdate').innerText = "Last update: " + now.toLocaleTimeString();
-                }
+function makeChart(ctx,color){
+    return new Chart(ctx,{
+        type:'line',
+        data:{labels:[],datasets:[{data:[],borderColor:color,borderWidth:2}]},
+        options:{responsive:true,maintainAspectRatio:false,animation:false}
+    });
+}
 
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                document.getElementById('lastUpdate').innerText = "Connection Error";
-            }
-        }
+const tempChart=makeChart(tempChartCanvas=document.getElementById("tempChart"),"orange");
+const humChart =makeChart(document.getElementById("humChart"),"deepskyblue");
+const gasChart =makeChart(document.getElementById("gasChart"),"lime");
 
-        // Initial fetch
-        fetchData(); 
-        // Refresh every 3 seconds
-        setInterval(fetchData, 3000);
-    </script>
+async function fetchData(){
+    const res=await fetch("/data");
+    const data=await res.json();
+    if(!data.length) return;
+
+    const last=data[data.length-1];
+
+    temp.innerText=last[0]+" °C";
+    hum.innerText =last[1]+" %";
+    gas.innerText =last[2]+" PPM";
+
+    tempAlert.innerHTML=last[0]>TEMP_LIMIT?"<span class='alert'>HIGH</span>":"";
+    humAlert.innerHTML =last[1]>HUM_LIMIT?"<span class='alert'>HIGH</span>":"";
+    gasAlert.innerHTML =last[2]>GAS_LIMIT?"<span class='alert'>DANGER</span>":"";
+
+    const labels=data.map(d=>d[3]);
+    tempChart.data.labels=labels;
+    tempChart.data.datasets[0].data=data.map(d=>d[0]);
+    tempChart.update();
+
+    humChart.data.labels=labels;
+    humChart.data.datasets[0].data=data.map(d=>d[1]);
+    humChart.update();
+
+    gasChart.data.labels=labels;
+    gasChart.data.datasets[0].data=data.map(d=>d[2]);
+    gasChart.update();
+
+    // TABLE
+    dataTable.innerHTML="";
+    data.forEach((d,i)=>{
+        dataTable.innerHTML+=`
+        <tr>
+            <td>${i+1}</td>
+            <td>${d[0]}</td>
+            <td>${d[1]}</td>
+            <td>${d[2]}</td>
+            <td>${d[3]}</td>
+        </tr>`;
+    });
+}
+setInterval(fetchData,2000);
+fetchData();
+
+function openZoom(type){
+    zoomModal.style.display="flex";
+    const ctx=zoomChartCanvas=document.getElementById("zoomChart").getContext("2d");
+    if(zoomChart) zoomChart.destroy();
+    let src= type==="temp"?tempChart:type==="hum"?humChart:gasChart;
+    zoomChart=new Chart(ctx,{type:'line',data:JSON.parse(JSON.stringify(src.data))});
+}
+function closeZoom(){ zoomModal.style.display="none"; }
+</script>
+
 </body>
 </html>
