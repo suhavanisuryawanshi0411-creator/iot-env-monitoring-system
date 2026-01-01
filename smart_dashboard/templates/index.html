@@ -91,7 +91,7 @@ tr:hover{ background:#1e293b; }
 <h2>🌍 Environment Monitoring Dashboard</h2>
 <p>Live Time: <span id="clock"></span></p>
 
-<!-- LIVE VALUES -->
+
 <div class="cards">
     <div class="card">🌡 Temperature
         <div class="value" id="temp">--</div>
@@ -107,7 +107,7 @@ tr:hover{ background:#1e293b; }
     </div>
 </div>
 
-<!-- CHARTS -->
+
 <div class="charts-row">
     <div class="chart-box" onclick="openZoom('temp')">
         <h4>Temperature</h4>
@@ -123,7 +123,7 @@ tr:hover{ background:#1e293b; }
     </div>
 </div>
 
-<!-- DATA TABLE -->
+
 <h3>📋 Sensor Data Table</h3>
 <table>
 <thead>
@@ -138,7 +138,7 @@ tr:hover{ background:#1e293b; }
 <tbody id="dataTable"></tbody>
 </table>
 
-<!-- ZOOM MODAL -->
+
 <div class="modal" id="zoomModal">
     <div class="modal-content">
         <span class="close" onclick="closeZoom()">✖</span>
@@ -195,7 +195,7 @@ async function fetchData(){
     gasChart.data.datasets[0].data=data.map(d=>d[2]);
     gasChart.update();
 
-    // TABLE
+    
     dataTable.innerHTML="";
     data.forEach((d,i)=>{
         dataTable.innerHTML+=`
