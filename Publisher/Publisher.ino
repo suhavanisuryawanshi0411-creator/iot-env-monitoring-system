@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <ArduinoMqttClient.h>
+<<<<<<< HEAD
 #include <DHT.h>
 
 const char* ssid = "AndroidAP_5063";
@@ -11,60 +12,65 @@ const char* broker = "10.223.1.61";
 int port = 1883;
 const char* topic = "environment/data";
 
+=======
+#include "DHT.h"
+>>>>>>> 914a028c453596ec14c268df78fad493481c92da
 
 #define DHTPIN 4
 #define DHTTYPE DHT11
 #define MQ2_PIN 34
 
-DHT dht(DHTPIN, DHTTYPE);
+const char* ssid = "AndroidAP_5063";
+const char* password = "anaghaaa";
+
+const char* broker = "10.223.1.61";
+int port = 1883;
+const char* topic = "environment/data";
 
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
-
+DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
   Serial.begin(115200);
 
   dht.begin();
+  pinMode(MQ2_PIN, INPUT);
 
   WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi");
-
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
+  Serial.println("\nWiFi connected");
 
-  Serial.println("\nWiFi Connected");
-
-  // Connect to MQTT Broker
-  mqttClient.connect(broker, port);
-  Serial.println("Connected to MQTT Broker");
+  Serial.print("Connecting to MQTT...");
+  while (!mqttClient.connect(broker, port)) {
+    Serial.print(".");
+    delay(1000);
+  }
+  Serial.println("CONNECTED to MQTT");
 }
 
-// --------------------
 void loop() {
+  mqttClient.poll();   // ⭐ REQUIRED ⭐
 
-  float temperature = dht.readTemperature();
-  float humidity = dht.readHumidity();
-  int gasValue = analogRead(MQ2_PIN);
+  float temp = dht.readTemperature();
+  float hum  = dht.readHumidity();
+  int gas    = analogRead(MQ2_PIN);
 
-  if (isnan(temperature) || isnan(humidity)) {
-    Serial.println("Failed to read from DHT sensor");
+  if (isnan(temp) || isnan(hum)) {
+    Serial.println("DHT11 read failed");
+    delay(2000);
     return;
   }
 
-  // Create message
-  String data = String(temperature) + "," +
-                String(humidity) + "," +
-                String(gasValue);
+  String payload = String(temp) + "," + String(hum) + "," + String(gas);
 
-  // Publish data
   mqttClient.beginMessage(topic);
-  mqttClient.print(data);
+  mqttClient.print(payload);
   mqttClient.endMessage();
 
-  Serial.println("Data Sent: " + data);
-
-  delay(3000);  // send every 3 seconds
+  Serial.println("Published → " + payload);
+  delay(5000);
 }

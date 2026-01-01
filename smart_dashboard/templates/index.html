@@ -1,132 +1,225 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Environment Monitor</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f0f2f5; }
-        .card-icon { font-size: 2.5rem; opacity: 0.8; }
-        .chart-container { position: relative; height: 40vh; width: 100%; }
-    </style>
+<title>Live Sensor Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    background:#0f172a;
+    color:white;
+    font-family:Arial;
+    padding:20px;
+}
+.cards{
+    display:flex;
+    gap:15px;
+    margin-bottom:20px;
+}
+.card{
+    flex:1;
+    background:#1e293b;
+    padding:15px;
+    border-radius:10px;
+    text-align:center;
+}
+.value{
+    font-size:26px;
+    font-weight:bold;
+}
+.alert{ color:red; font-weight:bold; }
+
+.charts-row{
+    display:flex;
+    gap:15px;
+    margin-bottom:30px;
+}
+.chart-box{
+    background:#1e293b;
+    padding:12px;
+    border-radius:10px;
+    width:33%;
+    cursor:pointer;
+}
+canvas{ height:160px !important; }
+
+/* TABLE */
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:#020617;
+    border-radius:10px;
+    overflow:hidden;
+}
+th,td{
+    padding:10px;
+    text-align:center;
+    border-bottom:1px solid #334155;
+}
+th{ background:#1e293b; }
+tr:hover{ background:#1e293b; }
+
+/* ZOOM */
+.modal{
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.85);
+    justify-content:center;
+    align-items:center;
+    z-index:999;
+}
+.modal-content{
+    background:#020617;
+    padding:20px;
+    width:90%;
+    height:80%;
+    border-radius:12px;
+}
+.modal canvas{ height:100% !important; }
+.close{
+    float:right;
+    font-size:22px;
+    cursor:pointer;
+}
+</style>
 </head>
+
 <body>
 
-    <nav class="navbar navbar-dark bg-dark mb-4">
-        <div class="container">
-            <span class="navbar-brand mb-0 h1">Environment Monitor</span>
-            <span class="text-white-50">DB: env_monitoring</span>
-        </div>
-    </nav>
+<h2>🌍 Environment Monitoring Dashboard</h2>
+<p>Live Time: <span id="clock"></span></p>
 
-    <div class="container">
-        <!-- Cards -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card text-white bg-danger shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Temperature</h5>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h2 id="val-temp">-- °C</h2>
-                            <div class="card-icon">🌡️</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-white bg-info shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Humidity</h5>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h2 id="val-hum">-- %</h2>
-                            <div class="card-icon">💧</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-white bg-warning shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Gas Level</h5>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h2 id="val-gas">--</h2>
-                            <div class="card-icon">☁️</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Chart -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Real-Time Data</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="envChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- LIVE VALUES -->
+<div class="cards">
+    <div class="card">🌡 Temperature
+        <div class="value" id="temp">--</div>
+        <div id="tempAlert"></div>
     </div>
+    <div class="card">💧 Humidity
+        <div class="value" id="hum">--</div>
+        <div id="humAlert"></div>
+    </div>
+    <div class="card">🧪 Gas
+        <div class="value" id="gas">--</div>
+        <div id="gasAlert"></div>
+    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        const ctx = document.getElementById('envChart').getContext('2d');
-        const envChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    { label: 'Temp (°C)', borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.1)', data: [], fill: true },
-                    { label: 'Hum (%)', borderColor: 'blue', backgroundColor: 'rgba(0,0,255,0.1)', data: [], fill: true },
-                    { label: 'Gas', borderColor: 'orange', data: [], fill: false, yAxisID: 'y1' }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true, position: 'left' },
-                    y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } }
-                }
-            }
-        });
+<!-- CHARTS -->
+<div class="charts-row">
+    <div class="chart-box" onclick="openZoom('temp')">
+        <h4>Temperature</h4>
+        <canvas id="tempChart"></canvas>
+    </div>
+    <div class="chart-box" onclick="openZoom('hum')">
+        <h4>Humidity</h4>
+        <canvas id="humChart"></canvas>
+    </div>
+    <div class="chart-box" onclick="openZoom('gas')">
+        <h4>Gas</h4>
+        <canvas id="gasChart"></canvas>
+    </div>
+</div>
 
-        async function fetchData() {
-            const response = await fetch('/api/data');
-            const data = await response.json();
-            
-            // Labels (Time)
-            const labels = data.map(d => {
-                const t = new Date(d.timestamp);
-                return t.toLocaleTimeString();
-            });
+<!-- DATA TABLE -->
+<h3>📋 Sensor Data Table</h3>
+<table>
+<thead>
+<tr>
+    <th>#</th>
+    <th>Temperature (°C)</th>
+    <th>Humidity (%)</th>
+    <th>Gas (PPM)</th>
+    <th>Timestamp</th>
+</tr>
+</thead>
+<tbody id="dataTable"></tbody>
+</table>
 
-            // Update Data
-            envChart.data.labels = labels;
-            envChart.data.datasets[0].data = data.map(d => d.temperature);
-            envChart.data.datasets[1].data = data.map(d => d.humidity);
-            envChart.data.datasets[2].data = data.map(d => d.gas); // Mapping DB column 'gas'
-            envChart.update();
+<!-- ZOOM MODAL -->
+<div class="modal" id="zoomModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeZoom()">✖</span>
+        <canvas id="zoomChart"></canvas>
+    </div>
+</div>
 
-            // Update Cards (Latest value)
-            if (data.length > 0) {
-                const latest = data[data.length - 1];
-                document.getElementById('val-temp').innerText = latest.temperature + " °C";
-                document.getElementById('val-hum').innerText = latest.humidity + " %";
-                document.getElementById('val-gas').innerText = latest.gas;
-            }
-        }
+<script>
+const TEMP_LIMIT=40, HUM_LIMIT=80, GAS_LIMIT=500;
+let zoomChart;
 
-        // Refresh every 3 seconds
-        setInterval(fetchData, 3000);
-        fetchData();
-    </script>
+function updateClock(){
+    clock.innerText=new Date().toLocaleTimeString();
+}
+setInterval(updateClock,1000);
+
+function makeChart(ctx,color){
+    return new Chart(ctx,{
+        type:'line',
+        data:{labels:[],datasets:[{data:[],borderColor:color,borderWidth:2}]},
+        options:{responsive:true,maintainAspectRatio:false,animation:false}
+    });
+}
+
+const tempChart=makeChart(tempChartCanvas=document.getElementById("tempChart"),"orange");
+const humChart =makeChart(document.getElementById("humChart"),"deepskyblue");
+const gasChart =makeChart(document.getElementById("gasChart"),"lime");
+
+async function fetchData(){
+    const res=await fetch("/data");
+    const data=await res.json();
+    if(!data.length) return;
+
+    const last=data[data.length-1];
+
+    temp.innerText=last[0]+" °C";
+    hum.innerText =last[1]+" %";
+    gas.innerText =last[2]+" PPM";
+
+    tempAlert.innerHTML=last[0]>TEMP_LIMIT?"<span class='alert'>HIGH</span>":"";
+    humAlert.innerHTML =last[1]>HUM_LIMIT?"<span class='alert'>HIGH</span>":"";
+    gasAlert.innerHTML =last[2]>GAS_LIMIT?"<span class='alert'>DANGER</span>":"";
+
+    const labels=data.map(d=>d[3]);
+    tempChart.data.labels=labels;
+    tempChart.data.datasets[0].data=data.map(d=>d[0]);
+    tempChart.update();
+
+    humChart.data.labels=labels;
+    humChart.data.datasets[0].data=data.map(d=>d[1]);
+    humChart.update();
+
+    gasChart.data.labels=labels;
+    gasChart.data.datasets[0].data=data.map(d=>d[2]);
+    gasChart.update();
+
+    // TABLE
+    dataTable.innerHTML="";
+    data.forEach((d,i)=>{
+        dataTable.innerHTML+=`
+        <tr>
+            <td>${i+1}</td>
+            <td>${d[0]}</td>
+            <td>${d[1]}</td>
+            <td>${d[2]}</td>
+            <td>${d[3]}</td>
+        </tr>`;
+    });
+}
+setInterval(fetchData,2000);
+fetchData();
+
+function openZoom(type){
+    zoomModal.style.display="flex";
+    const ctx=zoomChartCanvas=document.getElementById("zoomChart").getContext("2d");
+    if(zoomChart) zoomChart.destroy();
+    let src= type==="temp"?tempChart:type==="hum"?humChart:gasChart;
+    zoomChart=new Chart(ctx,{type:'line',data:JSON.parse(JSON.stringify(src.data))});
+}
+function closeZoom(){ zoomModal.style.display="none"; }
+</script>
+
 </body>
 </html>
